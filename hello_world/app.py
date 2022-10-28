@@ -1,41 +1,31 @@
+import os
+import logging
 import json
+from pythonjsonlogger import jsonlogger
+from aws_lambda_powertools.event_handler import APIGatewayRestResolver
 
-# import requests
+logger = logging.getLogger("APP")
+logHandler = logging.StreamHandler()
+formatter = jsonlogger.JsonFormatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s')
+logHandler.setFormatter(formatter)
+logger.addHandler(logHandler)
+logger.setLevel(os.getenv('LOG_LEVEL', 'INFO'))
 
+app = APIGatewayRestResolver()
 
-def hello_name(event, **kargs):
-    username = event['pathParameters']['name']
+@app.get('/hello/<name>')
+def hello_name(name):
+    logger.info(f'Request from {name} received.')
     return {
-        'statusCode': 200,
-        'body': json.dumps({
-            'message': f'Hello {username} !'
-        })
+        'message': f'Hello {name} !'
     }
 
-def hello(**kargs):
+@app.get('/hello')
+def hello():
+    logger.info('Request from Unknown received.')
     return {
-        'statusCode': 200,
-        'body': json.dumps({
-            'message': 'hello unknown !'
-        })
+        'message': 'hello unknown !'
     }
-
-class Router:
-    def __init__(self):
-        self.routes = {}
-    
-    def set(self, path, method, handler):
-        self.routes[f"{path}-{method}"] = handler
-    
-    def get(self, path, method):
-        try:
-            return self.routes[f"{path}-{method}"]
-        except KeyError:
-            raise RuntimeError(f'Cannot route request to correct method. path={path}, method={method}')
-
-router = Router()
-router.set(path='/hello', method='GET', handler=hello)
-router.set(path='/hello/{name}', method='GET', handler=hello_name)
 
 def lambda_handler(event, context):
     """Sample pure Lambda function
@@ -74,8 +64,5 @@ def lambda_handler(event, context):
     #        # "location": ip.text.replace("\n", "")
     #    }),
     #}
-    path = event['resource']
-    http_method = event['httpMethod']
-    route = router.get(path=path, method=http_method)
-    return route(event=event)
-    
+    logger.debug(event)
+    return app.resolve(event, context)

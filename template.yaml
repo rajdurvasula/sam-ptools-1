@@ -9,6 +9,8 @@ Description: >
 Globals:
   Function:
     Timeout: 3
+  Api:
+    TracingEnabled: true
 
 Resources:
   HelloWorldFunction:
@@ -17,6 +19,7 @@ Resources:
       CodeUri: hello_world/
       Handler: app.lambda_handler
       Runtime: python3.9
+      Tracing: Active
       Architectures:
         - x86_64
       Events:
